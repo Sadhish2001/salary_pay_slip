@@ -175,10 +175,10 @@ async function _buildDoc(p) {
   hline(doc, y, LEFT, RIGHT); y += 7;
 
   // ── Gross Earnings / Total Deductions row ────────────────────────────────
-  const gross          = earnings.reduce((s, e) => s + Number(e.current || 0), 0);
-  const totalDeductions = deductions.reduce((s, d) => s + Number(d.current || 0), 0);
-  const netPay         = gross - totalDeductions;
-  const grossYtd       = earnings.reduce((s, e) => s + Number(e.ytd || 0), 0);
+  const gross          = Number(p.grossEarnings || 0);
+  const totalDeductions = Number(p.totalDeductions || 0);
+  const netPay         = Number(p.netPay || 0);
+  const grossYtd       = Number(p.grossYtd || 0);
 
   doc.setFont('courier', 'bold').setFontSize(7);
   doc.text('GROSS EARNINGS', C_EARN_NAME, y);
@@ -190,7 +190,6 @@ async function _buildDoc(p) {
 
   doc.text('TOTAL DEDUCTIONS', C_DED_NAME, y);
   doc.text(money(totalDeductions), C_DED_CURR + 36, y, { align: 'right' });
-  doc.text(money(totalDeductions), TXT_R, y, { align: 'right' });
 
   y += 10;
   hline(doc, y, LEFT, RIGHT); y += 7;
@@ -243,18 +242,7 @@ async function _buildDoc(p) {
   y += 9;
   hline(doc, y, LEFT, RIGHT); y += 16;
 
-  // ── NPS Section ───────────────────────────────────────────────────────────
-  hline(doc, y, LEFT, RIGHT); y += 7;
 
-  doc.setFont('courier', 'bold').setFontSize(7);
-  doc.text('NPS CONTRIBUTION FOR THE MONTH :', TXT_L, y);
-  y += 9;
-  hline(doc, y, LEFT, RIGHT); y += 7;
-
-  doc.text('PARTICULARS', TXT_L, y);
-  doc.text('CURRENT MONTH', TXT_L + 200, y);
-  y += 9;
-  hline(doc, y, LEFT, RIGHT); y += 16;
 
   // ── Footer Notes ──────────────────────────────────────────────────────────
   doc.setFont('courier', 'normal').setFontSize(6.5).setTextColor(0);

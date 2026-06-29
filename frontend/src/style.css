@@ -283,7 +283,7 @@ body {
   text-transform: uppercase;
   letter-spacing: .5px;
 }
-.earn-cols  { grid-template-columns: 2fr 1fr 1fr 1fr 36px; }
+.earn-cols  { grid-template-columns: 2fr 1fr 1fr 36px; }
 .ded-cols   { grid-template-columns: 2fr 1fr 1fr 36px; }
 
 .table-row {

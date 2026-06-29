@@ -14,8 +14,9 @@ const DEFAULT_FORM = {
   department: '', uan: '',
   esicNo: '', npsNo: '',
   designation: '',
-  calendarDays: '', lossOfPay: 0,
-  lopReversal: 0, arrearDays: 0, daysPayable: '',
+  calendarDays: '', lossOfPay: '',
+  lopReversal: '', arrearDays: '', daysPayable: '',
+  grossEarnings: '', totalDeductions: '', netPay: ''
 };
 
 const DEFAULT_EARNINGS = [];
@@ -74,11 +75,12 @@ function EarningRow({ row, index, onChange, onRemove }) {
       <input placeholder="Name" value={row.name} onChange={c('name')} />
       <input type="number" placeholder="Current" value={row.current} onChange={c('current')} />
       <input type="number" placeholder="Arrear" value={row.arrear} onChange={c('arrear')} />
-      <input type="number" placeholder="YTD" value={row.ytd} onChange={c('ytd')} />
-      <button className="btn btn-danger" onClick={() => onRemove(index)} title="Remove">✕</button>
+      <button type="button" className="btn btn-danger" onClick={() => onRemove(index)} title="Remove">✕</button>
     </div>
   );
 }
+
+
 
 
 
@@ -193,37 +195,9 @@ function App() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const prevUrlRef = useRef(null);
 
-  // ── Computed totals ───────────────────────────────────────────────
-  const gross = useMemo(
-    () => earnings.reduce((s, e) => s + Number(e.current || 0), 0),
-    [earnings]
-  );
-
-  // LOP auto-calculation: daily rate = gross / daysPayable
-  const dailyRate = useMemo(() => {
-    const d = Number(form.daysPayable) || 0;
-    return d > 0 ? gross / d : 0;
-  }, [gross, form.daysPayable]);
-
-  const lopAmt = useMemo(
-    () => Math.round(Number(form.lossOfPay || 0) * dailyRate * 100) / 100,
-    [form.lossOfPay, dailyRate]
-  );
-  const lopRevAmt = useMemo(
-    () => Math.round(Number(form.lopReversal || 0) * dailyRate * 100) / 100,
-    [form.lopReversal, dailyRate]
-  );
-  const netLop = lopAmt - lopRevAmt;
-  // Final net pay = gross - net LOP effect
-  const netPay = gross - netLop;
-
-  // Inject auto-computed LOP lines into payslip data for PDF
   const payslipData = useCallback(() => {
-    const lopDeds = [];
-    if (lopAmt > 0) lopDeds.push({ name: 'LOSS OF PAY', current: lopAmt, ytd: lopAmt });
-    if (lopRevAmt > 0) lopDeds.push({ name: 'LOP REVERSAL', current: -lopRevAmt, ytd: -lopRevAmt });
-    return { ...form, earnings, deductions: lopDeds };
-  }, [form, earnings, lopAmt, lopRevAmt]);
+    return { ...form, earnings };
+  }, [form, earnings]);
 
 
   // ── Handlers ───────────────────────────────────────────────────────────
@@ -232,7 +206,7 @@ function App() {
   const changeEarn = (i, k, v) =>
     setEarnings(rows => rows.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
 
-  const addEarning = () => setEarnings(r => [...r, { name: '', current: 0, arrear: 0, ytd: 0 }]);
+  const addEarning = () => setEarnings(r => [...r, { name: '', current: '', arrear: '' }]);
   const removeEarning = i => setEarnings(r => r.filter((_, idx) => idx !== i));
 
   const showToast = msg => {
@@ -281,7 +255,7 @@ function App() {
     { id: 'employee', label: 'Employee Info', icon: 'user' },
     { id: 'payperiod', label: 'Pay Period', icon: 'calendar' },
     { id: 'earnings', label: 'Earnings', icon: 'earn' },
-    { id: 'preview', label: 'Pay Summary', icon: 'pdf' },
+    { id: 'summary', label: 'Pay Summary', icon: 'pdf' },
   ];
   if (!isAuthorized) {
     return (
@@ -371,7 +345,7 @@ function App() {
           <div className="summary-item" style={{ textAlign: 'left' }}>
             <div className="summary-label">Net Pay</div>
             <div className="summary-value green" style={{ fontSize: 20 }}>
-              ₹{netPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              ₹{Number(form.netPay || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </div>
           </div>
         </div>
@@ -478,7 +452,7 @@ function App() {
                 <button type="button" className="btn btn-add" onClick={addEarning}>+ Add Earning</button>
               </div>
               <div className="table-head earn-cols">
-                <span>Name</span><span>Current</span><span>Arrear</span><span>YTD</span><span></span>
+                <span>Name</span><span>Current</span><span>Arrear</span><span></span>
               </div>
               {earnings.length === 0 && (
                 <div style={{ color: 'var(--text3)', fontSize: 12, padding: '14px 0', textAlign: 'center' }}>
@@ -493,9 +467,8 @@ function App() {
 
 
 
-
           {/* Pay Summary */}
-          <section id="preview">
+          <section id="summary">
             <div className="card">
               <div className="card-header">
                 <div className="card-icon"><Icon name="eye" /></div>
@@ -521,65 +494,20 @@ function App() {
                 Emp No: <strong style={{ color: 'var(--text)' }}>{form.empNo || '—'}</strong>
               </div>
 
-              <div className="summary-grid">
-                <div className="summary-item">
-                  <div className="summary-label">Gross Earnings</div>
-                  <div className="summary-value green">
-                    ₹{gross.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </div>
+              <div className="form-grid-2">
+                <div className="field">
+                  <label htmlFor="grossEarnings">Gross Earnings</label>
+                  <input id="grossEarnings" name="grossEarnings" type="number" value={form.grossEarnings} onChange={changeForm} />
                 </div>
-                <div className="summary-item">
-                  <div className="summary-label">Net Pay</div>
-                  <div className="summary-value blue">
-                    ₹{netPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </div>
+                <div className="field">
+                  <label htmlFor="totalDeductions">Total Deductions</label>
+                  <input id="totalDeductions" name="totalDeductions" type="number" value={form.totalDeductions} onChange={changeForm} />
+                </div>
+                <div className="field">
+                  <label htmlFor="netPay">Net Pay</label>
+                  <input id="netPay" name="netPay" type="number" value={form.netPay} onChange={changeForm} />
                 </div>
               </div>
-
-              {/* LOP auto-calculation breakdown */}
-              {(lopAmt > 0 || lopRevAmt > 0) && (
-                <>
-                  <div className="divider" />
-                  <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px' }}>LOP Calculation</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 12px', background: 'var(--surface2)', borderRadius: 6 }}>
-                      <span style={{ color: 'var(--text2)' }}>Daily Rate (Gross ÷ Days Payable)</span>
-                      <span style={{ fontFamily: 'var(--mono)', color: 'var(--text)' }}>₹{dailyRate.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    {lopAmt > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 12px', background: 'var(--surface2)', borderRadius: 6 }}>
-                        <span style={{ color: 'var(--text2)' }}>Loss of Pay ({form.lossOfPay} day{Number(form.lossOfPay) !== 1 ? 's' : ''})</span>
-                        <span style={{ fontFamily: 'var(--mono)', color: 'var(--red)' }}>−₹{lopAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
-                    {lopRevAmt > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 12px', background: 'var(--surface2)', borderRadius: 6 }}>
-                        <span style={{ color: 'var(--text2)' }}>LOP Reversal ({form.lopReversal} day{Number(form.lopReversal) !== 1 ? 's' : ''})</span>
-                        <span style={{ fontFamily: 'var(--mono)', color: 'var(--green)' }}>+₹{lopRevAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '8px 12px', background: 'rgba(79,125,243,.08)', border: '1px solid rgba(79,125,243,.2)', borderRadius: 6 }}>
-                      <span style={{ color: 'var(--text)', fontWeight: 600 }}>Net LOP Deduction</span>
-                      <span style={{ fontFamily: 'var(--mono)', color: 'var(--accent)', fontWeight: 700 }}>₹{netLop.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {earnings.filter(e => e.name).length > 0 && (
-                <>
-                  <div className="divider" />
-                  <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px' }}>Earnings Breakdown</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {earnings.filter(e => e.name).map((e, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 12px', background: 'var(--surface2)', borderRadius: 6 }}>
-                        <span style={{ color: 'var(--text2)' }}>{e.name.toUpperCase()}</span>
-                        <span style={{ fontFamily: 'var(--mono)', color: 'var(--green)' }}>₹{Number(e.current).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
 
 
             </div>
