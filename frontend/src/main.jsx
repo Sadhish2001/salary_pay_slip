@@ -132,9 +132,57 @@ function PreviewModal({ blobUrl, onClose, onDownload, loading }) {
     </div>
   );
 }
+// ── Password Prompt Component ──────────────────────────────────────────────
+function PasswordPrompt({ onConfirm }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (password === '123456') {
+      onConfirm();
+    } else {
+      setError('Incorrect password. Please try again.');
+      setPassword('');
+    }
+  };
+
+  return (
+    <div className="auth-overlay">
+      <form onSubmit={handleSubmit} className="auth-card">
+        <div className="auth-logo">
+          <img src="/aaha_logo.png" alt="AAHA Logo" />
+          <h2>AAHA eCOM Solutions</h2>
+        </div>
+        <p className="auth-subtitle">Payslip Generator Access Control</p>
+        <div className="field">
+          <label htmlFor="auth-password">Enter Password</label>
+          <input
+            id="auth-password"
+            type="password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (error) setError('');
+            }}
+            placeholder="••••••"
+            autoFocus
+          />
+        </div>
+        {error && <div className="auth-error">{error}</div>}
+        <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: 8 }}>
+          Unlock Home Screen
+        </button>
+      </form>
+    </div>
+  );
+}
 
 // ── Main App ──────────────────────────────────────────────────────────────
 function App() {
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+    return sessionStorage.getItem('payslip_authorized') === 'true';
+  });
   const [form, setForm] = useState(DEFAULT_FORM);
   const [earnings, setEarnings] = useState(DEFAULT_EARNINGS);
   const [loading, setLoading] = useState(false);
@@ -235,6 +283,16 @@ function App() {
     { id: 'earnings', label: 'Earnings', icon: 'earn' },
     { id: 'preview', label: 'Pay Summary', icon: 'pdf' },
   ];
+  if (!isAuthorized) {
+    return (
+      <PasswordPrompt
+        onConfirm={() => {
+          sessionStorage.setItem('payslip_authorized', 'true');
+          setIsAuthorized(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="app-wrapper">
