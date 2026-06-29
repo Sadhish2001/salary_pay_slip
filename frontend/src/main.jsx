@@ -139,7 +139,7 @@ function PasswordPrompt({ onConfirm }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (password === '123456') {
+    if (password === 'Monday@123') {
       onConfirm();
     } else {
       setError('Incorrect password. Please try again.');
@@ -220,8 +220,8 @@ function App() {
   // Inject auto-computed LOP lines into payslip data for PDF
   const payslipData = useCallback(() => {
     const lopDeds = [];
-    if (lopAmt > 0)    lopDeds.push({ name: 'LOSS OF PAY',   current: lopAmt,    ytd: lopAmt });
-    if (lopRevAmt > 0) lopDeds.push({ name: 'LOP REVERSAL',  current: -lopRevAmt, ytd: -lopRevAmt });
+    if (lopAmt > 0) lopDeds.push({ name: 'LOSS OF PAY', current: lopAmt, ytd: lopAmt });
+    if (lopRevAmt > 0) lopDeds.push({ name: 'LOP REVERSAL', current: -lopRevAmt, ytd: -lopRevAmt });
     return { ...form, earnings, deductions: lopDeds };
   }, [form, earnings, lopAmt, lopRevAmt]);
 
